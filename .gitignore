@@ -26,6 +26,10 @@
 *.sql
 *.sqlite
 
+# The binary file #
+###################
+ray
+
 # OS generated files #
 ######################
 .DS_Store
