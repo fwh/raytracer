@@ -1,0 +1,56 @@
+---
+#  This is an example scene description for the raytracer framework created 
+#  for the Computer Science course "Introduction to Computer Graphics"
+#  taught at the University of Groningen by Tobias Isenberg.
+#
+#  The scene description format we use is based on YAML, which is a human friendly 
+#  data serialization standard. This gives us a flexible format which should be
+#  fairly easy to make both backward and forward compatible (i.e., by ignoring
+#  unknown directives). In addition parsers are available for many languages.
+#  See http://www.yaml.org/ for more information on YAML.
+#
+#  The example scene description should largely speak for itself. By now
+#  it should be clear that the #-character can be used to insert comments.
+#
+Camera:
+    eye: [-5,-5,0]
+    center: [200,200,0]
+    up: [0,1,0]
+    viewSize: [400,400]
+#Eye: [-5,-5,0]
+Shadows: true
+MaxRecursionDepth: 0
+RenderMode: gooch
+GoochParameters:
+  b: 0.55
+  y: 0.3
+  alpha: 0.25
+  beta: 0.5
+
+SuperSampling:
+  factor: 2
+  
+Lights:
+- position: [0,0,1500]
+  color: [1.0,1.0,1.0]
+  
+Objects:
+- type: mesh
+  path: B-747
+  scale: 3
+  material:
+    color: [1.0,0.84,0.0]
+    ka: 0.2
+    kd: 0.7
+    ks: .9
+    n: 50
+
+- type: sphere
+  position: [0,0,-10]
+  radius: 1000
+  material: # grey
+    color: [0.4,0.4,0.4]
+    ka: 0.2
+    kd: 0.8
+    ks: 0.2
+    n: 5

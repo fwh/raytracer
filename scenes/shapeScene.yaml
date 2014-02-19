@@ -1,0 +1,42 @@
+Eye: [200,200,1000]
+
+RenderMode: phong
+
+Lights:
+- position: [-200,600,1500]
+  color: [1.0,1.0,1.0]
+
+
+Objects:
+- type: sphere
+  position: [140,220,400]
+  radius: 50
+  material: # yellow
+    color: [1.0,0.8,0.0]
+    ka: 0.2
+    kd: 0.8
+    ks: 0.0
+    n: 1
+    
+- type: plane
+  a: [100,100,100]
+  N: [0,0,1]
+  material: # yellow
+    color: [1.0,0.8,0.0]
+    ka: 0.2
+    kd: 0.8
+    ks: 0.0
+    n: 1
+    
+- type: triangle
+  a: [100,100,300]
+  b: [300,100,300]
+  c: [200,300,300]
+  material: # orange
+    color: [1.0,0.5,0.0]
+    ka: 0.2
+    kd: 0.8
+    ks: 0.5
+    n: 32
+
+
