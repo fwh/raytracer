@@ -10,14 +10,14 @@
 #CPP = g++ -Wall -fopenmp -g
 
 # GNU (faster)
-CPP = g++ -O5 -Wall -fomit-frame-pointer -ffast-math -fopenmp
+CPP = clang++ -O3 -Wall -fomit-frame-pointer -ffast-math -fopenmp
 
 LIBS = -lm
 
 EXECUTABLE = ray
 
 OBJS = main.o raytracer.o sphere.o light.o material.o \
-	image.o triple.o lodepng.o scene.o triangle.o plane.o glm.o matrix.o quad.o modelobject.o
+	image.o triple.o lodepng.o scene.o triangle.o plane.o glm.o matrix.o quad.o modelobject.o camera.o
 
 YAMLOBJS = $(subst .cpp,.o,$(wildcard yaml/*.cpp))
 

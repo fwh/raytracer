@@ -65,6 +65,8 @@ public:
     void setCamera(Vector defaultUp, Vector defaultCenter);
     Color renderPhong(Object* obj, const Ray &ray, const int recurseCount);
     void processPixel(Image &img, int x, int y);
+    Triple getCenter();
+    Triple getEye();
 };
 
 #endif /* end of include guard: SCENE_H_KNBLQLP6 */

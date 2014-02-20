@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <omp.h>
 #include <stdlib.h>
+#include "camera.h"
 #include  <cstdlib>
 Hit min_hit(std::numeric_limits<double>::infinity(),Vector());
 
@@ -152,8 +153,9 @@ void Scene::render(Image &img)
      
     cout << objects.size() << endl;
     //Default values are arbitrarily chosen
-    setCamera(Triple(0.0,1.0,0.0), Triple(200, 200, 0));
+    //setCamera(Triple(0.0,1.0,0.0), Triple(200, 200, 0));
     //Determine minimal and maximal value before we actually trace
+    Camera* camera = new Camera(eye);
     if(renderMode.compare("zbuffer") == 0)    
         determineMinMaxZ(w, h);
         
@@ -171,7 +173,7 @@ void Scene::render(Image &img)
                 {
                     float dx = xSample / (samplingFactor + 1.0);
                     float dy = ySample / (samplingFactor + 1.0);
-                    Point pixel(center + (x + dx - 0.5 * w) * H + (y + dy - 0.5 * h) * V);
+                    Point pixel(center + (x + dx - 0.5 * w) * camera->getHVec() + (y + dy - 0.5 * h) * camera->getVVec());
                     Ray ray(eye, (pixel - eye).normalized());
                     //#pragma omp critical
                     col += trace(ray, 0);
@@ -271,7 +273,7 @@ void Scene::setBeta(float Beta)
 {
   beta = Beta;
 }
-
+/*
 //Calculate vectors which are needed for arbitrary viewing
 void Scene::setCamera(Vector const defaultUp, Vector const defaultCenter)
 {
@@ -286,7 +288,7 @@ void Scene::setCamera(Vector const defaultUp, Vector const defaultCenter)
     H = hVec * up.length();
     V = vVec * up.length();
 }
-
+*/
 //Called before actual tracing so we can dynamically determine how deep the scene is for best results
 void Scene::determineMinMaxZ(int w, int h)
 {
