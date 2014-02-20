@@ -29,7 +29,7 @@ private:
     std::vector<Object*> objects;
     std::vector<Light*> lights;
     Triple eye;
-    Vector H, V;
+    //Vector H, V;
     std::string renderMode;
     double minZ, maxZ;
     bool makeShadows;
@@ -37,7 +37,7 @@ private:
     int samplingFactor;
     Triple center;
     Triple up;
-    bool hasCamera;
+    //bool hasCamera;
     int* viewSize;
     float b, y, alpha, beta;
 public:

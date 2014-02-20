@@ -188,6 +188,7 @@ void Scene::render(Image &img)
 
 Color Scene::determineColor(int x, int y, int w, int h)
 {
+    Camera* camera = new Camera(eye);
     Color col(0.0,0.0,0.0);
     for(int xSample = 1; xSample <= samplingFactor; ++xSample)
     {
@@ -196,7 +197,7 @@ Color Scene::determineColor(int x, int y, int w, int h)
             float dx, dy;
             dx = xSample / (samplingFactor + 1.0);
             dy = ySample / (samplingFactor + 1.0);
-            Point pixel(center + (x + dx - 0.5 * w) * H + (y + dy - 0.5 * h) * V);
+            Point pixel(center + (x + dx - 0.5 * w) * camera->getHVec()  + (y + dy - 0.5 * h) * camera->getVVec());
             Ray ray(eye, (pixel - eye).normalized());
             col += trace(ray, 0);
         }
@@ -223,7 +224,7 @@ void Scene::setEye(Triple e)
 
 void Scene::setCenter(Triple e)
 {
-    hasCamera = true;
+   // hasCamera = true;
     center = e;
 }
 
@@ -292,6 +293,7 @@ void Scene::setCamera(Vector const defaultUp, Vector const defaultCenter)
 //Called before actual tracing so we can dynamically determine how deep the scene is for best results
 void Scene::determineMinMaxZ(int w, int h)
 {
+  Camera* camera = new Camera(eye);
     if(renderMode.compare("zbuffer") == 0)
     {
         double minHit = std::numeric_limits<double>::infinity();
@@ -300,7 +302,7 @@ void Scene::determineMinMaxZ(int w, int h)
         {
           for (int x = 0; x < w; x++) 
           {
-              Point pixel = (center + (x - 0.5 * w) * H + (y - 0.5 * h) * V);
+              Point pixel = (center + (x - 0.5 * w) * camera->getHVec() + (y - 0.5 * h) * camera->getVVec());
               Ray ray(eye, (pixel-eye).normalized());
               for (unsigned int i = 0; i < objects.size(); ++i) 
               {
