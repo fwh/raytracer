@@ -40,29 +40,22 @@ private:
         double alpha;
         double beta;
     };
-   /* Triple eye;
-    //Vector H, V;
-    std::string renderMode;
-    double minZ, maxZ;
-    bool makeShadows;
-    int maxRecurseDepth;
-    int samplingFactor;
-    Triple center;
-    Triple up;
-    //bool hasCamera;
-    int* viewSize;
-    float b, y, alpha, beta;*/
+    //double minZ, maxZ;
+    //int maxRecurseDepth;
+    //int samplingFactor;
+    //int* viewSize;
+    /*float b, y, alpha, beta;*/
     std::vector<Object*> objects;
     std::vector<Light*> lights;
     Camera camera;
     RenderMode renderMode;
     GoochParameters goochParameters;
-    bool renderShadows;
+    bool m_RenderShadows;
     unsigned int maxRecursionDepth;
     unsigned int samplingFactor;
 
 public:
-    Scene() : renderMode(PHONG), renderShadows(false), maxRecursionDepth(1), samplingFactor(1){};
+    Scene() : renderMode(PHONG), m_RenderShadows(false), maxRecursionDepth(1), samplingFactor(1){};
     //void setB(float B);
     //void setY(float Y);
     //void setAlpha(float Alpha);
@@ -71,13 +64,10 @@ public:
     void render(Image &img);
     void addObject(Object *o);
     void addLight(Light *l);
-    //void setEye(Triple e);
-    //void setCenter(Triple e);
-    //void setUp(Triple e);
     unsigned int getNumObjects() { return objects.size(); }
     unsigned int getNumLights() { return lights.size(); }
     void setRenderMode(std::string s);
-    //void setShadows(bool s);
+    void setShadows(bool s);
     Object* determineObject(const Ray &ray);
     //void setMaxRecurseDepth(int q);
     //void setSamplingFactor(int s);

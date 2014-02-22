@@ -225,7 +225,7 @@ bool Raytracer::readScene(const std::string& inputFilename)
               scene->setBeta(0.0f);
               scene->setY(0.0f);
               scene->setB(0.0f);
-            }
+            }*/
             if(doc.FindValue("Shadows") != NULL) 
               scene->setShadows(doc["Shadows"]);
             else
@@ -233,7 +233,7 @@ bool Raytracer::readScene(const std::string& inputFilename)
               cout << "Using default shadow value: false" << endl;
               scene->setShadows(false);
             }
-            if(doc.FindValue("MaxRecursionDepth") != NULL)
+            /*if(doc.FindValue("MaxRecursionDepth") != NULL)
               scene->setMaxRecurseDepth(doc["MaxRecursionDepth"]);
             else
             {

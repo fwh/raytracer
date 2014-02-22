@@ -65,7 +65,7 @@ Color Scene::renderPhong(Object* obj, const Ray &ray, const int reflectionCount)
       Object* possibleObject = determineObject(r);
       
       //Make sure we actually want shadows, and we hit something that is not ourselves on the way to the light
-      if(/*makeShadows && */possibleObject != NULL && possibleObject != obj)
+      if(m_RenderShadows && possibleObject != NULL && possibleObject != obj)
         c += ambient;
       else
       {
@@ -175,7 +175,7 @@ void Scene::render(Image &img)
         
   
     int x,y;
-    #pragma omp parallel for private(y) shared(x)
+    //#pragma omp parallel for private(y) shared(x)
     for (y = 0; y < h; y++) 
     {    
         for (x = 0; x < w; x++) 
@@ -228,33 +228,18 @@ void Scene::addLight(Light *l)
 {
     lights.push_back(l);
 }
-/*
-void Scene::setEye(Triple e)
-{
-    eye = e;
-}
 
-void Scene::setCenter(Triple e)
-{
-   // hasCamera = true;
-    center = e;
-}
-
-void Scene::setUp(Triple e)
-{
-    up = e;
-}*/
 void Scene::setRenderMode(std::string s)
 {
     if(s == "phong")
       renderMode = PHONG;
 }
-/*
-void Scene::setShadows(bool b)
-{
-    makeShadows = b;
-}
 
+void Scene::setShadows(bool renderShadows)
+{
+    m_RenderShadows = renderShadows;
+}
+/*
 void Scene::setMaxRecurseDepth(int q)
 {
     maxRecurseDepth = q;
