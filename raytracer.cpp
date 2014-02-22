@@ -175,24 +175,34 @@ bool Raytracer::readScene(const std::string& inputFilename)
             YAML::Node doc;
             parser.GetNextDocument(doc);
 
+            Camera camera;
+            Triple eye;
+            int w,h;
             // Read scene configuration options
             if(doc.FindValue("Camera") != NULL)
             {
-              scene->setEye(parseTriple(doc["Camera"]["eye"]));
-              scene->setCenter(parseTriple(doc["Camera"]["center"]));
-              scene->setUp(parseTriple(doc["Camera"]["up"]));
-              w = doc["Camera"]["viewSize"][0];
-              h = doc["Camera"]["viewSize"][1];
+                eye = parseTriple(doc["Camera"]["eye"]);
+                Vector center = parseTriple(doc["Camera"]["center"]);
+                Vector up = parseTriple(doc["Camera"]["up"]);
+                w = doc["Camera"]["viewSize"][0];
+                h = doc["Camera"]["viewSize"][1];
+                camera.m_Center = center;
+                camera.m_Up = up;
             }
             else
             {
-              Triple eye = parseTriple(doc["Eye"]);
+              eye = parseTriple(doc["Eye"]);
+              camera.m_Up = Triple(0.0,1.0,0.0);
+              camera.m_Center = Triple(200, 200, 0);
               w = 400;
               h = 400;
-              cout << "Using default eye: " << eye << " and image size of (" << w << ", " << h << ")" << endl;
-              scene->setEye(eye);
-
             }
+            camera.m_Eye = eye;
+            camera.m_Width = w;
+            camera.m_Heigth = h;
+            
+            scene->setCamera(camera);
+            
             if(doc.FindValue("RenderMode") != NULL)
               scene->setRenderMode(doc["RenderMode"]);
             else
@@ -201,7 +211,7 @@ bool Raytracer::readScene(const std::string& inputFilename)
               scene->setRenderMode("phong");
             }
 
-            if(doc.FindValue("GoochParameters") != NULL)
+            /*if(doc.FindValue("GoochParameters") != NULL)
             {
               scene->setAlpha(doc["GoochParameters"]["alpha"]);
               scene->setBeta(doc["GoochParameters"]["beta"]); 
@@ -229,14 +239,14 @@ bool Raytracer::readScene(const std::string& inputFilename)
             {
               cout << "Using default recursion depth: 0" << endl;
               scene->setMaxRecurseDepth(0);
-            }
-            if(doc.FindValue("SuperSampling") != NULL)
-              scene->setSamplingFactor(doc["SuperSampling"]["factor"]);
-            else
-            {
-              cout << "Using default sampling factor: 1" << endl;
-              scene->setSamplingFactor(1);
-            }
+            }*/
+            //if(doc.FindValue("SuperSampling") != NULL)
+            //  scene->setSamplingFactor(doc["SuperSampling"]["factor"]);
+            //else
+            //{
+            //  cout << "Using default sampling factor: 1" << endl;
+            //  scene->setSamplingFactor(1);
+            //}
             // Read and parse the scene objects
             const YAML::Node& sceneObjects = doc["Objects"];
             if (sceneObjects.GetType() != YAML::CT_SEQUENCE) {
@@ -277,8 +287,8 @@ bool Raytracer::readScene(const std::string& inputFilename)
 
 void Raytracer::renderToFile(const std::string& outputFilename)
 {
-    Image img(w,h);
-    cout << "Tracing image of (" << w << ", " << h << ")..." << endl;
+    Image img(scene->getCamera().m_Width, scene->getCamera().m_Heigth);
+    cout << "Tracing image of (" << scene->getCamera().m_Width << ", " << scene->getCamera().m_Heigth << ")..." << endl;
     //In case of z buffer, determine minimum and maximum distance from eye first
     //if(scene->getRenderMode().compare("zbuffer") == 0)
     //    scene->determineMinMaxZ(img);

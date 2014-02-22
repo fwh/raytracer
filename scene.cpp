@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include "camera.h"
 #include  <cstdlib>
+
 Hit min_hit(std::numeric_limits<double>::infinity(),Vector());
 
 Object* Scene::determineObject(const Ray &ray)
@@ -64,7 +65,7 @@ Color Scene::renderPhong(Object* obj, const Ray &ray, const int reflectionCount)
       Object* possibleObject = determineObject(r);
       
       //Make sure we actually want shadows, and we hit something that is not ourselves on the way to the light
-      if(makeShadows && possibleObject != NULL && possibleObject != obj)
+      if(/*makeShadows && */possibleObject != NULL && possibleObject != obj)
         c += ambient;
       else
       {
@@ -78,13 +79,13 @@ Color Scene::renderPhong(Object* obj, const Ray &ray, const int reflectionCount)
     
     Color returnCol = c * material->color;
     //Determine wheter we should reflec and take its specular color
-    if(reflectionCount < maxRecurseDepth)
-    {
-      Vector reflectDir = (ray.D - 2.0f*(ray.D.dot(N))*N);
-      Ray reflect(hit, reflectDir);
-      Object* newObj = determineObject(reflect);
-      returnCol += renderPhong(newObj, reflect, reflectionCount+1) * material->ks;
-    }
+    //if(reflectionCount < maxRecurseDepth)
+    //{
+    //  Vector reflectDir = (ray.D - 2.0f*(ray.D.dot(N))*N);
+    //  Ray reflect(hit, reflectDir);
+    //  Object* newObj = determineObject(reflect);
+    //  returnCol += renderPhong(newObj, reflect, reflectionCount+1) * material->ks;
+    //}
     return returnCol + specular;
 }
 
@@ -94,7 +95,25 @@ Color Scene::trace(const Ray &ray, const int reflectionCount)
     Object* obj = determineObject(ray);
     // No hit? Return background color.
     if (!obj) return Color(0.0, 0.0, 0.0);
-    
+
+    switch(renderMode)
+    {
+      case PHONG:
+        return renderPhong(obj, ray, reflectionCount);
+/*
+      case ZBUFFER:
+        return renderZBuffer();
+
+      case NORMAL:
+        return renderNormal();
+
+      case GOOCH:
+        return renderGooch();*/
+
+      default:
+        return Color(0.0,0.0,0.0);;
+    }
+    /*
     //If we should render phong, call that function with the hit object, ray and the reflectionCount(defaults to 0 if we don't want to reflect)
     else if(renderMode.compare("phong") == 0)
     {  
@@ -141,9 +160,8 @@ Color Scene::trace(const Ray &ray, const int reflectionCount)
     else if(renderMode.compare("normal") == 0)
     {
         return (min_hit.N  + 1.0) / 2.0;
-    }
+    }*/
     //If we have an unspecified render mode we return the background color
-    else return Color(0.0,0.0,0.0);
 }
 
 void Scene::render(Image &img)
@@ -152,16 +170,12 @@ void Scene::render(Image &img)
     int h = img.height();
      
     cout << objects.size() << endl;
-    //Default values are arbitrarily chosen
-    //setCamera(Triple(0.0,1.0,0.0), Triple(200, 200, 0));
-    //Determine minimal and maximal value before we actually trace
-    Camera* camera = new Camera(eye);
-    if(renderMode.compare("zbuffer") == 0)    
-        determineMinMaxZ(w, h);
+    //if(renderMode.compare("zbuffer") == 0)    
+    //    determineMinMaxZ(w, h);
         
   
     int x,y;
-    //#pragma omp parallel for private(y,x)
+    #pragma omp parallel for private(y) shared(x)
     for (y = 0; y < h; y++) 
     {    
         for (x = 0; x < w; x++) 
@@ -169,13 +183,12 @@ void Scene::render(Image &img)
             Color col;
             for(int xSample = 1; xSample <= samplingFactor; ++xSample)
             {
-                for(int ySample = 1; ySample <=samplingFactor; ++ySample)
+                for(int ySample = 1; ySample <= samplingFactor; ++ySample)
                 {
                     float dx = xSample / (samplingFactor + 1.0);
                     float dy = ySample / (samplingFactor + 1.0);
-                    Point pixel(center + (x + dx - 0.5 * w) * camera->getHVec() + (y + dy - 0.5 * h) * camera->getVVec());
-                    Ray ray(eye, (pixel - eye).normalized());
-                    //#pragma omp critical
+                    Point pixel(camera.m_Center + (x + dx - 0.5 * camera.m_Width) * camera.right()  + (y + dy - 0.5 * camera.m_Heigth) * -camera.m_Up);
+                    Ray ray(camera.m_Eye, (pixel - camera.m_Eye).normalized());
                     col += trace(ray, 0);
                 }
             }
@@ -188,7 +201,6 @@ void Scene::render(Image &img)
 
 Color Scene::determineColor(int x, int y, int w, int h)
 {
-    Camera* camera = new Camera(eye);
     Color col(0.0,0.0,0.0);
     for(int xSample = 1; xSample <= samplingFactor; ++xSample)
     {
@@ -197,8 +209,8 @@ Color Scene::determineColor(int x, int y, int w, int h)
             float dx, dy;
             dx = xSample / (samplingFactor + 1.0);
             dy = ySample / (samplingFactor + 1.0);
-            Point pixel(center + (x + dx - 0.5 * w) * camera->getHVec()  + (y + dy - 0.5 * h) * camera->getVVec());
-            Ray ray(eye, (pixel - eye).normalized());
+            Point pixel(camera.m_Center + (x + dx - 0.5 * camera.m_Width) * camera.right()  + (y + dy - 0.5 * camera.m_Heigth) * -camera.m_Up);
+            Ray ray(camera.m_Eye, (pixel - camera.m_Eye).normalized());
             col += trace(ray, 0);
         }
     }
@@ -216,7 +228,7 @@ void Scene::addLight(Light *l)
 {
     lights.push_back(l);
 }
-
+/*
 void Scene::setEye(Triple e)
 {
     eye = e;
@@ -231,13 +243,13 @@ void Scene::setCenter(Triple e)
 void Scene::setUp(Triple e)
 {
     up = e;
-}
-
+}*/
 void Scene::setRenderMode(std::string s)
 {
-    renderMode = s;
+    if(s == "phong")
+      renderMode = PHONG;
 }
-
+/*
 void Scene::setShadows(bool b)
 {
     makeShadows = b;
@@ -252,12 +264,12 @@ void Scene::setSamplingFactor(int s)
 {
     samplingFactor = s;
 }
-
+/*
 std::string Scene::getRenderMode()
 {
     return renderMode;
 }
-
+/*
 void Scene::setB(float B)
 {
   b = B;
@@ -274,26 +286,18 @@ void Scene::setBeta(float Beta)
 {
   beta = Beta;
 }
-/*
-//Calculate vectors which are needed for arbitrary viewing
-void Scene::setCamera(Vector const defaultUp, Vector const defaultCenter)
-{
-    if(!hasCamera)
-    {
-        up = defaultUp;
-        center = defaultCenter;
-    }
-    Vector cameraDirection = (center-eye).normalized();
-    Vector hVec = cameraDirection.cross(up).normalized();
-    Vector vVec = cameraDirection.cross(hVec).normalized();
-    H = hVec * up.length();
-    V = vVec * up.length();
-}
 */
+
+//Calculate vectors which are needed for arbitrary viewing
+void Scene::setCamera(const Camera& c)
+{
+  camera = c;
+}
+
+/*
 //Called before actual tracing so we can dynamically determine how deep the scene is for best results
 void Scene::determineMinMaxZ(int w, int h)
 {
-  Camera* camera = new Camera(eye);
     if(renderMode.compare("zbuffer") == 0)
     {
         double minHit = std::numeric_limits<double>::infinity();
@@ -302,7 +306,7 @@ void Scene::determineMinMaxZ(int w, int h)
         {
           for (int x = 0; x < w; x++) 
           {
-              Point pixel = (center + (x - 0.5 * w) * camera->getHVec() + (y - 0.5 * h) * camera->getVVec());
+              Point pixel = (center + (x - 0.5 * w) * camera.getHVec() + (y - 0.5 * h) * camera.getVVec());
               Ray ray(eye, (pixel-eye).normalized());
               for (unsigned int i = 0; i < objects.size(); ++i) 
               {
@@ -317,4 +321,4 @@ void Scene::determineMinMaxZ(int w, int h)
        minZ = minHit;
        maxZ = maxHit;
     }
-}
+}*/
