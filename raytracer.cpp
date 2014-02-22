@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <fstream>
 #include <assert.h>
+#include "scene.h"
 
 // Functions to ease reading from YAML input
 void operator >> (const YAML::Node& node, Triple& t);
@@ -158,6 +159,37 @@ Light* Raytracer::parseLight(const YAML::Node& node)
 * Read a scene from file
 */
 
+Camera Raytracer::parseVision(const YAML::Node& doc)
+{
+    Camera camera;
+    Triple eye;
+    int w,h;
+    assert(doc.FindValue("Camera") || doc.FindValue("Eye"));
+    if(doc.FindValue("Camera") != NULL)
+    {
+        eye = parseTriple(doc["Camera"]["eye"]);
+        Vector center = parseTriple(doc["Camera"]["center"]);
+        Vector up = parseTriple(doc["Camera"]["up"]);
+        w = doc["Camera"]["viewSize"][0];
+        h = doc["Camera"]["viewSize"][1];
+        camera.m_Center = center;
+        camera.m_Up = up;
+    }
+    else
+    {
+      eye = parseTriple(doc["Eye"]);
+      camera.m_Up = Triple(0.0,1.0,0.0);
+      camera.m_Center = Triple(200, 200, 0);
+      w = 400;
+      h = 400;
+    }
+    camera.m_Eye = eye;
+    camera.m_Width = w;
+    camera.m_Heigth = h;
+
+    return camera;
+}
+
 bool Raytracer::readScene(const std::string& inputFilename)
 {
     // Initialize a new scene
@@ -175,32 +207,7 @@ bool Raytracer::readScene(const std::string& inputFilename)
             YAML::Node doc;
             parser.GetNextDocument(doc);
 
-            Camera camera;
-            Triple eye;
-            int w,h;
-            // Read scene configuration options
-            if(doc.FindValue("Camera") != NULL)
-            {
-                eye = parseTriple(doc["Camera"]["eye"]);
-                Vector center = parseTriple(doc["Camera"]["center"]);
-                Vector up = parseTriple(doc["Camera"]["up"]);
-                w = doc["Camera"]["viewSize"][0];
-                h = doc["Camera"]["viewSize"][1];
-                camera.m_Center = center;
-                camera.m_Up = up;
-            }
-            else
-            {
-              eye = parseTriple(doc["Eye"]);
-              camera.m_Up = Triple(0.0,1.0,0.0);
-              camera.m_Center = Triple(200, 200, 0);
-              w = 400;
-              h = 400;
-            }
-            camera.m_Eye = eye;
-            camera.m_Width = w;
-            camera.m_Heigth = h;
-            
+            Camera camera = parseVision(doc);
             scene->setCamera(camera);
             
             if(doc.FindValue("RenderMode") != NULL)
@@ -233,20 +240,23 @@ bool Raytracer::readScene(const std::string& inputFilename)
               cout << "Using default shadow value: false" << endl;
               scene->setShadows(false);
             }
-            /*if(doc.FindValue("MaxRecursionDepth") != NULL)
+
+            if(doc.FindValue("MaxRecursionDepth") != NULL)
               scene->setMaxRecurseDepth(doc["MaxRecursionDepth"]);
             else
             {
               cout << "Using default recursion depth: 0" << endl;
               scene->setMaxRecurseDepth(0);
-            }*/
-            //if(doc.FindValue("SuperSampling") != NULL)
-            //  scene->setSamplingFactor(doc["SuperSampling"]["factor"]);
-            //else
-            //{
-            //  cout << "Using default sampling factor: 1" << endl;
-            //  scene->setSamplingFactor(1);
-            //}
+            }
+
+            if(doc.FindValue("SuperSampling") != NULL)
+              scene->setSamplingFactor(doc["SuperSampling"]["factor"]);
+            else
+            {
+              cout << "Using default sampling factor: 1" << endl;
+              scene->setSamplingFactor(1);
+            }
+
             // Read and parse the scene objects
             const YAML::Node& sceneObjects = doc["Objects"];
             if (sceneObjects.GetType() != YAML::CT_SEQUENCE) {
@@ -287,11 +297,12 @@ bool Raytracer::readScene(const std::string& inputFilename)
 
 void Raytracer::renderToFile(const std::string& outputFilename)
 {
-    Image img(scene->getCamera().m_Width, scene->getCamera().m_Heigth);
+    int x = scene->getCamera().m_Width;
+    int y = scene->getCamera().m_Heigth;
+    Image img(x, y);
     cout << "Tracing image of (" << scene->getCamera().m_Width << ", " << scene->getCamera().m_Heigth << ")..." << endl;
     //In case of z buffer, determine minimum and maximum distance from eye first
-    //if(scene->getRenderMode().compare("zbuffer") == 0)
-    //    scene->determineMinMaxZ(img);
+    std::cout << "Render mode: " << scene->getRenderMode() << std::endl;
     scene->render(img);
     
     if(model != NULL) glmDelete(model);

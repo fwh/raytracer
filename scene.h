@@ -40,7 +40,7 @@ private:
         double alpha;
         double beta;
     };
-    //double minZ, maxZ;
+    double minZ, maxZ;
     //int maxRecurseDepth;
     //int samplingFactor;
     //int* viewSize;
@@ -51,11 +51,11 @@ private:
     RenderMode renderMode;
     GoochParameters goochParameters;
     bool m_RenderShadows;
-    unsigned int maxRecursionDepth;
-    unsigned int samplingFactor;
+    unsigned int m_MaxRecursionDepth;
+    unsigned int m_SamplingFactor;
 
 public:
-    Scene() : renderMode(PHONG), m_RenderShadows(false), maxRecursionDepth(1), samplingFactor(1){};
+    Scene() : renderMode(PHONG), m_RenderShadows(false), m_MaxRecursionDepth(1), m_SamplingFactor(1){};
     //void setB(float B);
     //void setY(float Y);
     //void setAlpha(float Alpha);
@@ -69,14 +69,16 @@ public:
     void setRenderMode(std::string s);
     void setShadows(bool s);
     Object* determineObject(const Ray &ray);
-    //void setMaxRecurseDepth(int q);
-    //void setSamplingFactor(int s);
-    //std::string getRenderMode();
-    //void determineMinMaxZ(int w, int h);
-    Color determineColor(int x, int y, int w, int h);
+    void setMaxRecurseDepth(int recursionDepth);
+    void setSamplingFactor(int samplingFactor);
+    unsigned int getRenderMode();
+    Color renderZBuffer(const Ray &ray);
+    void determineMinMaxZ();
+    //Color determineColor(int x, int y, int w, int h);
     void setCamera(const Camera& camera);
     const Camera& getCamera(){return camera;}
-    Color renderPhong(Object* obj, const Ray &ray, const int recurseCount);
+    Color renderPhong(const Ray &ray, const int recurseCount);
+    Color renderNormal(const Ray &ray);
     void processPixel(Image &img, int x, int y);
 };
 

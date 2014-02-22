@@ -15,7 +15,7 @@
 //
 
 #include "scene.h"
-#include "sphere.h"
+//#include "sphere.h"
 #include "material.h"
 #include <stdio.h>
 #include <omp.h>
@@ -40,8 +40,13 @@ Object* Scene::determineObject(const Ray &ray)
     return obj;
 }
 
-Color Scene::renderPhong(Object* obj, const Ray &ray, const int reflectionCount)
+Color Scene::renderPhong(const Ray &ray, const int reflectionCount)
 {
+    // Find hit object and distance
+    Object* obj = determineObject(ray);
+    // No hit? Return background color.
+    if (!obj) return Color(0.0, 0.0, 0.0);
+
     if(obj == NULL)
         return Color(0.0,0.0,0.0);
     Material *material = obj->material;            //the hit objects material
@@ -79,55 +84,60 @@ Color Scene::renderPhong(Object* obj, const Ray &ray, const int reflectionCount)
     
     Color returnCol = c * material->color;
     //Determine wheter we should reflec and take its specular color
-    //if(reflectionCount < maxRecurseDepth)
-    //{
-    //  Vector reflectDir = (ray.D - 2.0f*(ray.D.dot(N))*N);
-    //  Ray reflect(hit, reflectDir);
-    //  Object* newObj = determineObject(reflect);
-    //  returnCol += renderPhong(newObj, reflect, reflectionCount+1) * material->ks;
-    //}
+    if(reflectionCount < m_MaxRecursionDepth)
+    {
+      Vector reflectDir = (ray.D - 2.0f*(ray.D.dot(N))*N);
+      Ray reflect(hit, reflectDir);
+      Object* newObj = determineObject(reflect);
+      if(newObj)
+        returnCol += renderPhong(reflect, reflectionCount+1) * material->ks;
+    }
     return returnCol + specular;
+}
+
+Color Scene::renderZBuffer(const Ray &ray)
+{    
+  // Find hit object and distance
+  Object* obj = determineObject(ray);
+  // No hit? Return background color.
+  if (!obj) return Color(0.0, 0.0, 0.0);
+
+  double scaled = 1.0 - (min_hit.t - minZ) / (maxZ - minZ);
+  return Color(scaled,scaled,scaled);
+}
+
+Color Scene::renderNormal(const Ray &ray)
+{ 
+  // Find hit object and distance
+  Object* obj = determineObject(ray);
+  // No hit? Return background color.
+  if (!obj) return Color(0.0, 0.0, 0.0);
+
+  return (min_hit.N  + 1.0) / 2.0;
 }
 
 Color Scene::trace(const Ray &ray, const int reflectionCount)
 {
-    // Find hit object and distance
-    Object* obj = determineObject(ray);
-    // No hit? Return background color.
-    if (!obj) return Color(0.0, 0.0, 0.0);
 
     switch(renderMode)
     {
       case PHONG:
-        return renderPhong(obj, ray, reflectionCount);
-/*
+        return renderPhong(ray, reflectionCount);
+
       case ZBUFFER:
-        return renderZBuffer();
+        return renderZBuffer(ray);
 
       case NORMAL:
-        return renderNormal();
-
+        return renderNormal(ray);
+/*
       case GOOCH:
         return renderGooch();*/
 
       default:
         return Color(0.0,0.0,0.0);;
     }
-    /*
-    //If we should render phong, call that function with the hit object, ray and the reflectionCount(defaults to 0 if we don't want to reflect)
-    else if(renderMode.compare("phong") == 0)
-    {  
-        return renderPhong(obj, ray, reflectionCount);
-    }
     
-    //Do zbuffer, minZ and maxZ should be initialized by determineMinMaxZ
-    else if(renderMode.compare("zbuffer") == 0)
-    {
-        double scaled = 1.0 - ((min_hit.t) - minZ) / (maxZ - minZ);
-        return Color(scaled,scaled,scaled);
-    }
-    
-    else if(renderMode.compare("gooch") == 0)
+    /*else if(renderMode.compare("gooch") == 0)
     {
         Material *material = obj->material;            //the hit objects material
         Point hit = ray.at(min_hit.t);                 //the hit point
@@ -155,25 +165,20 @@ Color Scene::trace(const Ray &ray, const int reflectionCount)
           c += gooch;
         }
         return c + specular;
-    }
-    //Scale the normal vector of the hit between 0.0 and 1.0, That should give its color
-    else if(renderMode.compare("normal") == 0)
-    {
-        return (min_hit.N  + 1.0) / 2.0;
     }*/
-    //If we have an unspecified render mode we return the background color
 }
+
+
 
 void Scene::render(Image &img)
 {
     int w = img.width();
     int h = img.height();
-     
+
+    determineMinMaxZ();
+
     cout << objects.size() << endl;
-    //if(renderMode.compare("zbuffer") == 0)    
-    //    determineMinMaxZ(w, h);
-        
-  
+
     int x,y;
     //#pragma omp parallel for private(y) shared(x)
     for (y = 0; y < h; y++) 
@@ -181,42 +186,22 @@ void Scene::render(Image &img)
         for (x = 0; x < w; x++) 
         {
             Color col;
-            for(int xSample = 1; xSample <= samplingFactor; ++xSample)
+            for(int xSample = 1; xSample <= m_SamplingFactor; ++xSample)
             {
-                for(int ySample = 1; ySample <= samplingFactor; ++ySample)
+                for(int ySample = 1; ySample <= m_SamplingFactor; ++ySample)
                 {
-                    float dx = xSample / (samplingFactor + 1.0);
-                    float dy = ySample / (samplingFactor + 1.0);
+                    float dx = xSample / (m_SamplingFactor + 1.0);
+                    float dy = ySample / (m_SamplingFactor + 1.0);
                     Point pixel(camera.m_Center + (x + dx - 0.5 * camera.m_Width) * camera.right()  + (y + dy - 0.5 * camera.m_Heigth) * -camera.m_Up);
                     Ray ray(camera.m_Eye, (pixel - camera.m_Eye).normalized());
                     col += trace(ray, 0);
                 }
             }
-            col /= (samplingFactor * samplingFactor);
+            col /= (m_SamplingFactor * m_SamplingFactor);
             col.clamp();
             img(x,y) = col;
         }
     }
-}
-
-Color Scene::determineColor(int x, int y, int w, int h)
-{
-    Color col(0.0,0.0,0.0);
-    for(int xSample = 1; xSample <= samplingFactor; ++xSample)
-    {
-        for(int ySample = 1; ySample <=samplingFactor; ++ySample)
-        {
-            float dx, dy;
-            dx = xSample / (samplingFactor + 1.0);
-            dy = ySample / (samplingFactor + 1.0);
-            Point pixel(camera.m_Center + (x + dx - 0.5 * camera.m_Width) * camera.right()  + (y + dy - 0.5 * camera.m_Heigth) * -camera.m_Up);
-            Ray ray(camera.m_Eye, (pixel - camera.m_Eye).normalized());
-            col += trace(ray, 0);
-        }
-    }
-    col /= (samplingFactor * samplingFactor);
-    col.clamp();
-    return col;
 }
 
 void Scene::addObject(Object *o)
@@ -231,7 +216,13 @@ void Scene::addLight(Light *l)
 
 void Scene::setRenderMode(std::string s)
 {
-    if(s == "phong")
+    if(s == "zbuffer")
+      renderMode = ZBUFFER;
+    else if(s == "normal")
+      renderMode = NORMAL;
+    else if(s == "gooch")
+      renderMode = GOOCH;
+    else
       renderMode = PHONG;
 }
 
@@ -239,18 +230,18 @@ void Scene::setShadows(bool renderShadows)
 {
     m_RenderShadows = renderShadows;
 }
-/*
+
 void Scene::setMaxRecurseDepth(int q)
 {
-    maxRecurseDepth = q;
+    m_MaxRecursionDepth = q;
 }
 
 void Scene::setSamplingFactor(int s)
 {
-    samplingFactor = s;
+    m_SamplingFactor = s;
 }
-/*
-std::string Scene::getRenderMode()
+
+unsigned int Scene::getRenderMode()
 {
     return renderMode;
 }
@@ -279,31 +270,31 @@ void Scene::setCamera(const Camera& c)
   camera = c;
 }
 
-/*
 //Called before actual tracing so we can dynamically determine how deep the scene is for best results
-void Scene::determineMinMaxZ(int w, int h)
+void Scene::determineMinMaxZ()
 {
-    if(renderMode.compare("zbuffer") == 0)
+    if(renderMode == RenderMode(ZBUFFER))
     {
         double minHit = std::numeric_limits<double>::infinity();
         double maxHit = -std::numeric_limits<double>::infinity();
-        for (int y = 0; y < h; y++) 
+
+        for (int y = 0; y < camera.m_Heigth; y++) 
         {
-          for (int x = 0; x < w; x++) 
+          for (int x = 0; x < camera.m_Width; x++) 
           {
-              Point pixel = (center + (x - 0.5 * w) * camera.getHVec() + (y - 0.5 * h) * camera.getVVec());
-              Ray ray(eye, (pixel-eye).normalized());
+              Point pixel(camera.m_Center + (x - 0.5 * camera.m_Width) * camera.right()  + (y - 0.5 * camera.m_Heigth) * -camera.m_Up);
+              Ray ray(camera.m_Eye, (pixel - camera.m_Eye).normalized());
               for (unsigned int i = 0; i < objects.size(); ++i) 
               {
-                  Hit hit(objects[i]->intersect(ray));
-                  if (hit.t<minHit) 
-                      minHit = hit.t;
-                  if(hit.t > maxHit)
-                      maxHit = hit.t;
+                Hit hit(objects[i]->intersect(ray));
+                if (hit.t < minHit) 
+                    minHit = hit.t;
+                else if(hit.t > maxHit)
+                    maxHit = hit.t;
               }
           }
        }
        minZ = minHit;
        maxZ = maxHit;
     }
-}*/
+}
