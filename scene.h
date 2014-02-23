@@ -27,12 +27,17 @@
 class Scene
 {
 private:
-    enum RenderMode {
-        PHONG,
-        ZBUFFER,
-        NORMAL,
-        GOOCH
-    };
+
+    double minZ, maxZ;
+    std::vector<Object*> m_Objects;
+    std::vector<Light*> m_Lights;
+    Camera m_Camera;
+    bool m_RenderShadows;
+    unsigned int m_MaxRecursionDepth;
+    unsigned int m_SamplingFactor;
+
+public:
+    Scene() : m_RenderShadows(false), m_MaxRecursionDepth(1), m_SamplingFactor(1), m_RenderMode(PHONG){};    
 
     struct GoochParameters {
         double b;
@@ -40,46 +45,42 @@ private:
         double alpha;
         double beta;
     };
-    double minZ, maxZ;
-    //int maxRecurseDepth;
-    //int samplingFactor;
-    //int* viewSize;
-    /*float b, y, alpha, beta;*/
-    std::vector<Object*> objects;
-    std::vector<Light*> lights;
-    Camera camera;
-    RenderMode renderMode;
-    GoochParameters goochParameters;
-    bool m_RenderShadows;
-    unsigned int m_MaxRecursionDepth;
-    unsigned int m_SamplingFactor;
 
-public:
-    Scene() : renderMode(PHONG), m_RenderShadows(false), m_MaxRecursionDepth(1), m_SamplingFactor(1){};
-    //void setB(float B);
-    //void setY(float Y);
-    //void setAlpha(float Alpha);
-    //void setBeta(float Beta);
+    enum RenderMode {
+        PHONG,
+        ZBUFFER,
+        NORMAL,
+        GOOCH
+    };
+
     Color trace(const Ray &ray, const int recurseCount);
-    void render(Image &img);
-    void addObject(Object *o);
-    void addLight(Light *l);
-    unsigned int getNumObjects() { return objects.size(); }
-    unsigned int getNumLights() { return lights.size(); }
-    void setRenderMode(std::string s);
-    void setShadows(bool s);
     Object* determineObject(const Ray &ray);
-    void setMaxRecurseDepth(int recursionDepth);
-    void setSamplingFactor(int samplingFactor);
-    unsigned int getRenderMode();
-    Color renderZBuffer(const Ray &ray);
-    void determineMinMaxZ();
-    //Color determineColor(int x, int y, int w, int h);
-    void setCamera(const Camera& camera);
-    const Camera& getCamera(){return camera;}
+    void render(Image &img);
+
+    void addObject(Object *o) { m_Objects.push_back(o); }
+    void addLight(Light *l)   { m_Lights.push_back(l); }
+
+    unsigned int const getNumObjects() { return m_Objects.size(); }
+    unsigned int const getNumLights()  { return m_Lights.size(); }
+    unsigned int const getRenderMode() { return m_RenderMode; }
+    const Camera&      getCamera()     { return m_Camera; }
+
+    void setRenderMode(unsigned int s)                  { m_RenderMode = (RenderMode)s; }
+    void setShadows(bool s)                             { m_RenderShadows = s; }
+    void setMaxRecurseDepth(int recursionDepth)         { m_MaxRecursionDepth = recursionDepth; }
+    void setSamplingFactor(int samplingFactor)          { m_SamplingFactor = samplingFactor; }
+    void setGoochParameters(GoochParameters parameters) { m_GoochParameters = parameters; }
+    void setCamera(const Camera& camera)                { m_Camera = camera; }
+
     Color renderPhong(const Ray &ray, const int recurseCount);
     Color renderNormal(const Ray &ray);
-    void processPixel(Image &img, int x, int y);
+    Color renderGooch(const Ray &ray);
+    Color renderZBuffer(const Ray &ray);
+
+    void determineMinMaxZ();
+private:
+    GoochParameters m_GoochParameters;
+    RenderMode m_RenderMode;
 };
 
 #endif /* end of include guard: SCENE_H_KNBLQLP6 */

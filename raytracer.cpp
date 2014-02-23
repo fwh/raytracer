@@ -190,6 +190,31 @@ Camera Raytracer::parseVision(const YAML::Node& doc)
     return camera;
 }
 
+Scene::GoochParameters Raytracer::parseGoochParameters(const YAML::Node& doc)
+{
+    Scene::GoochParameters parameters;
+    doc["GoochParameters"]["alpha"] >> parameters.alpha;
+    doc["GoochParameters"]["beta"] >> parameters.beta;
+    doc["GoochParameters"]["y"] >> parameters.y;
+    doc["GoochParameters"]["b"] >> parameters.b;
+    return parameters;
+}
+
+unsigned int Raytracer::parseRenderMode(const YAML::Node& node)
+{
+    if(node["RenderMode"] == "zbuffer")
+        return Scene::ZBUFFER;
+    else if(node["RenderMode"] == "gooch")
+        return Scene::GOOCH;
+    else if(node["RenderMode"] == "normal")
+        return Scene::NORMAL;
+    else
+    {
+        cout << "Detected unsupported render mode. Defaulting to phong" << std::endl;
+        return Scene::PHONG;
+    }
+}
+
 bool Raytracer::readScene(const std::string& inputFilename)
 {
     // Initialize a new scene
@@ -211,28 +236,19 @@ bool Raytracer::readScene(const std::string& inputFilename)
             scene->setCamera(camera);
             
             if(doc.FindValue("RenderMode") != NULL)
-              scene->setRenderMode(doc["RenderMode"]);
+              scene->setRenderMode(parseRenderMode(doc));
+
             else
             {
               cout << "Using default render mode: phong" << endl;
-              scene->setRenderMode("phong");
+              scene->setRenderMode(Scene::PHONG);
             }
 
-            /*if(doc.FindValue("GoochParameters") != NULL)
+            if(doc.FindValue("GoochParameters") != NULL)
             {
-              scene->setAlpha(doc["GoochParameters"]["alpha"]);
-              scene->setBeta(doc["GoochParameters"]["beta"]); 
-              scene->setY(doc["GoochParameters"]["y"]); 
-              scene->setB(doc["GoochParameters"]["b"]);   
+                Scene::GoochParameters param = parseGoochParameters(doc);
+                scene->setGoochParameters(param);
             }
-            else
-            {
-              cout << "No Gooch parameters found. Using default values." << endl;
-              scene->setAlpha(0.0f);
-              scene->setBeta(0.0f);
-              scene->setY(0.0f);
-              scene->setB(0.0f);
-            }*/
             if(doc.FindValue("Shadows") != NULL) 
               scene->setShadows(doc["Shadows"]);
             else

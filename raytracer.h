@@ -32,9 +32,10 @@ private:
     Light* parseLight(const YAML::Node& node);
     bool parseBool(const YAML::Node& node);
     Camera parseVision(const YAML::Node& node);
+    Scene::GoochParameters parseGoochParameters(const YAML::Node& node);
+    unsigned int parseRenderMode(const YAML::Node& node);
 public:
     Raytracer() { }
-    
     bool readScene(const std::string& inputFilename);
     void renderToFile(const std::string& outputFilename);
 };
